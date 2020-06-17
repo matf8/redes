@@ -308,73 +308,73 @@ int main(int argc, char* argv[]) {
 
     if(p > 0){  //proceso padre "cliente tcp"
         while(true){             
-            sleep(1);        
-            cout<<"Ingrese una ip\n";	
-			cin >> dirIp;
-            if (dirIp == "*") { // broadcasting UDP
-                struct sockaddr_in send_addr, recv_addr;
-                int trueflag = 1;
+        	sleep(1);        
+        	cout<<"Ingrese una ip\n";	
+		cin >> dirIp;
+        	if (dirIp == "*") { // broadcasting UDP
+			struct sockaddr_in send_addr, recv_addr;
+			int trueflag = 1;
 
-                // socket 
-                if ((fd5_udp = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
-                    cout << "\33[46m\33[31m[ERROR]: socket(udp)\33[00m\n";
+			// socket 
+			if ((fd5_udp = socket(AF_INET, SOCK_DGRAM, 0)) < 0)
+			    cout << "\33[46m\33[31m[ERROR]: socket(udp)\33[00m\n";
 
-                #ifndef SEND_ONLY
-                    // socket opt broadcast
-                    if (setsockopt(fd5_udp, SOL_SOCKET, SO_BROADCAST, &trueflag, sizeof trueflag) < 0)
-                        cout << "\33[46m\33[31m[ERROR]: socketopt(udp_rcv)\33[00m\n";
+			#ifndef SEND_ONLY
+			    // socket opt broadcast
+			    if (setsockopt(fd5_udp, SOL_SOCKET, SO_BROADCAST, &trueflag, sizeof trueflag) < 0)
+				cout << "\33[46m\33[31m[ERROR]: socketopt(udp_rcv)\33[00m\n";
 
-                    // Se cargan los datos de la estructura que enviará datos
-                    memset(&send_addr, 0, sizeof send_addr);
-                    send_addr.sin_family = AF_INET;
-                    send_addr.sin_port = htons(atoi(argv[1]));
-                    // broadcasting address netmask 24
-                    inet_aton("192.168.1.255", &send_addr.sin_addr);
-                    //send_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
-                #endif // ! SEND_ONLY
+			    // Se cargan los datos de la estructura que enviará datos
+			    memset(&send_addr, 0, sizeof send_addr);
+			    send_addr.sin_family = AF_INET;
+			    send_addr.sin_port = htons(atoi(argv[1]));
+			    // broadcasting address netmask 24
+			    inet_aton("192.168.1.255", &send_addr.sin_addr);
+			    //send_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
+			#endif // ! SEND_ONLY
 
-                #ifndef RECV_ONLY
-                    // libera socket para ser reutilizado
-                    if (setsockopt(fd5_udp, SOL_SOCKET, SO_REUSEADDR, &trueflag, sizeof trueflag) < 0)
-                        cout << "\33[46m\33[31m[ERROR]: socketopt(udp_send)\33[00m\n";
+			#ifndef RECV_ONLY
+			    // libera socket para ser reutilizado
+			    if (setsockopt(fd5_udp, SOL_SOCKET, SO_REUSEADDR, &trueflag, sizeof trueflag) < 0)
+				cout << "\33[46m\33[31m[ERROR]: socketopt(udp_send)\33[00m\n";
 
-                    // Se cargan los datos de la estructura que recibirá datos
-                    memset(&recv_addr, 0, sizeof recv_addr);
-                    recv_addr.sin_family = AF_INET;
-                    recv_addr.sin_port = htons(atoi(argv[1]));
-                    recv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+			    // Se cargan los datos de la estructura que recibirá datos
+			    memset(&recv_addr, 0, sizeof recv_addr);
+			    recv_addr.sin_family = AF_INET;
+			    recv_addr.sin_port = htons(atoi(argv[1]));
+			    recv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-                    // llamada a bind
-                    if (bind(fd5_udp, (struct sockaddr*)&recv_addr, sizeof recv_addr) < 0)
-                        cout << "\33[46m\33[31m[ERROR]: bind(udp)\33[00m\n";
-                #endif // ! RECV_ONLY
+			    // llamada a bind
+			    if (bind(fd5_udp, (struct sockaddr*)&recv_addr, sizeof recv_addr) < 0)
+				cout << "\33[46m\33[31m[ERROR]: bind(udp)\33[00m\n";
+			#endif // ! RECV_ONLY
 
-                #ifndef SEND_ONLY
-                    sleep(1);
-                    cout << "Ingrese el mensaje que será enviado\n";
-                    getline(cin >> ws, mensaje_boradcast); // para tomar los espacios del std in
-                    
-                    // llamada a sendto
-                    if (sendto(fd5_udp, mensaje_boradcast.c_str(), MAX_LARGO_MENSAJE, 0, (struct sockaddr*)&send_addr, sizeof send_addr) < 0)
-                        cout << "\33[46m\33[31m[ERROR]: send(udp)\33[00m\n";
-                    sleep(1);
-                #endif // ! SEND_ONLY
+			#ifndef SEND_ONLY
+			    sleep(1);
+			    cout << "Ingrese el mensaje que será enviado\n";
+			    getline(cin >> ws, mensaje_boradcast); // para tomar los espacios del std in
 
-                #ifndef RECV_ONLY
-                    resetChar(puerto);
-                    printf("conexion recibida desde > %s:%d\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port));
-                    sprintf(puerto, "%d", ntohs(recv_addr.sin_port));  // para guardar los datos del puerto del cliente
-                    strcat(strcat(strcat(strcat(strcat(ipport, "\33[31m[\33[34m"), inet_ntoa(recv_addr.sin_addr)), "\33[00m:"), puerto), "\33[31m]\33[00m ");  // concadena ip y puerto
-                    
-                    //llmada a recv
-                    if ((numbytes = recv(fd5_udp, mensaje_broad_recibido, MAX_LARGO_MENSAJE, 0)) < 0)
-                        cout << "\33[46m\33[31m[ERROR]: rcv(udp)\33[00m\n";
-                    sleep(1);
-                    resetStringNUM(mensaje_broad_recibido);
-                    cout << "\33[31m[\33[00m" << getTiempo() << "\33[31m-\33[00m" << ipport << "\33[33m<" << " dice: " << mensaje_broad_recibido << "\33[00m\n";
-                    resetChar(ipport);
-                #endif // ! RECV_ONLY
-                close(fd5_udp);
+			    // llamada a sendto
+			    if (sendto(fd5_udp, mensaje_boradcast.c_str(), MAX_LARGO_MENSAJE, 0, (struct sockaddr*)&send_addr, sizeof send_addr) < 0)
+				cout << "\33[46m\33[31m[ERROR]: send(udp)\33[00m\n";
+			    sleep(1);
+			#endif // ! SEND_ONLY
+
+			#ifndef RECV_ONLY
+			    resetChar(puerto);
+			    printf("conexion recibida desde > %s:%d\n", inet_ntoa(recv_addr.sin_addr), ntohs(recv_addr.sin_port));
+			    sprintf(puerto, "%d", ntohs(recv_addr.sin_port));  // para guardar los datos del puerto del cliente
+			    strcat(strcat(strcat(strcat(strcat(ipport, "\33[31m[\33[34m"), inet_ntoa(recv_addr.sin_addr)), "\33[00m:"), puerto), "\33[31m]\33[00m ");  // concadena ip y puerto
+
+			    //llmada a recv
+			    if ((numbytes = recv(fd5_udp, mensaje_broad_recibido, MAX_LARGO_MENSAJE, 0)) < 0)
+				cout << "\33[46m\33[31m[ERROR]: rcv(udp)\33[00m\n";
+			    sleep(1);
+			    resetStringNUM(mensaje_broad_recibido);
+			    cout << "\33[31m[\33[00m" << getTiempo() << "\33[31m-\33[00m" << ipport << "\33[33m<" << " dice: " << mensaje_broad_recibido << "\33[00m\n";
+			    resetChar(ipport);
+			#endif // ! RECV_ONLY
+			close(fd5_udp);
              } else { // recibe una ip o localhost*/
                 string ip = dirIp;  // se copia string para liberar buffer colgado
 
