@@ -310,7 +310,6 @@ int main(int argc, char* argv[]) {
         }
         resetStringNUM(buf);
         cout << "Bienvenido " << buf << endl;
-        cout << "Algo mas!! " << buf << endl;
     }
     else {
         cout << "Usuario incorrecto." << endl;
@@ -333,7 +332,8 @@ int main(int argc, char* argv[]) {
             sleep(1);
             cout << "Ingrese una ip\n";
             cin >> dirIp;
-            if (dirIp == "*") {     // broadcasting UDP
+
+			if (dirIp == "*") {     // broadcasting UDP
 
                 //  socket
                 if ((fd5_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
@@ -401,19 +401,11 @@ int main(int argc, char* argv[]) {
 
                 if(mensaje_enviado.compare(path) == 0)
                 {
-
-                    cout<<"CLIENTE - antes de entrar al if de comparte file"<<"\n";
-
                     send(fd3_cliente, path.c_str(), MAX_LARGO_MENSAJE, 0);
 
                     cout << "Ingresar path de la imagen: ";
                     cin >> path;
-                    FILE *imagen = fopen(path.c_str(),"r");
-
-                    if(imagen==NULL){
-                        cout<<"Error"<<"\n";
-                        break;
-                    }
+                    FILE *imagen = fopen(path.c_str(),"rw");
 
                     char Buffer[2] = "";
 					
@@ -423,21 +415,9 @@ int main(int argc, char* argv[]) {
                         send(fd3_cliente,Buffer,sizeof(Buffer),0);
                     }
                     send(fd3_cliente,"Hola",sizeof(Buffer),0);
-
-                    cout<<"CLIENTE - despues del while"<<"\n";
-
-                    /*control ACK*/
-                    char Buf[BUFSIZ];
-                    recv(fd3_cliente, Buf, BUFSIZ, 0);
-                    if (strcmp (Buf,"ACK") == 0 )
-                    {
-                    printf("Recive ACK\n");
-                    }
-                    close (fd3_cliente);
-                    fclose(imagen);
               }
               else{
-                  send(fd3_cliente, mensaje_enviado.c_str(), MAX_LARGO_MENSAJE, 0);
+                  send(fd3_cliente, user_mensaje.c_str(), MAX_LARGO_MENSAJE, 0);
                   close(fd3_cliente);
               }
 
@@ -519,33 +499,17 @@ int main(int argc, char* argv[]) {
                         printf("\33[46m\33[31m[ERROR]: recv(s)\33[00m\n");
                         exit(-1);
                     }
-
-                    cout<<"SERVER - antes de entrar al if de comparte file"<<"\n";
 					
 					string path ("&file");
-					
-					//if(mensaje_recibido.compare(path.c_str())==0){
 
 					if(strcmp (mensaje_recibido,path.c_str()) == 0){
-                      FILE *fp=fopen("recv.jpeg","w");
-
-                     if(fp==NULL){
-                         cout<<"Error"<<"\n";
-                         break;
-                     }
-
-                     cout<<"SERVIDOR - antes de entrar al WHILE de comparte file"<<"\n";
+                      FILE *fp=fopen("recv.jpeg","wb");
 
                      while(1)
                      {
-                         char Buffer[2] = "";
-						 						
-                         //if (numbytes = recv(fd2_accept, Buffer, sizeof(Buffer), 0))
+                        char Buffer[2] = "";
 						if (recv(fd2_accept, Buffer, sizeof(Buffer), 0))
 						{
-							 
-							 //resetStringNUM(Buffer);
-							 //cout<<Buffer<<endl;
                              if ( strcmp (Buffer,"Hola") == 0  )
                              {
                                  break;
@@ -557,14 +521,8 @@ int main(int argc, char* argv[]) {
 						}
  
                      }
-
-                     cout<<"SERVIDOR - antes de entrar al WHILE de comparte file"<<"\n";
                      fclose(fp);
-					 
-					 send(fd2_accept, "ACK" ,3,0);
-					 printf("ACK Send");
-					 //break;
-					 
+					 					 
                     }
                     else {
                       alarm(0);
