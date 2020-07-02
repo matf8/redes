@@ -10,8 +10,8 @@ SERVIDOR
     2 -- bind()   https://www.man7.org/linux/man-pages/man2/bind.2.html
     3 -- listen() https://www.man7.org/linux/man-pages/man2/listen.2.html
     4 -- accept() https://man7.org/linux/man-pages/man2/accept.2.html
-    5 -- read()  se va a usar recv() que recibe un mensaje de un socket 
-                  https://www.man7.org/linux/man-pages/man2/recv.2.html   
+    5 -- read()  se va a usar recv() que recibe un mensaje de un socket
+                  https://www.man7.org/linux/man-pages/man2/recv.2.html
     6 -- write() se va a usar send() que envia un mensaje en un socket
                   https://man7.org/linux/man-pages/man2/send.2.html
 
@@ -34,13 +34,13 @@ OTRAS OPERACIONES
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <sys/types.h> 
+#include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <netdb.h>
-#include <sys/stat.h> 
+#include <sys/stat.h>
 #include <sys/wait.h>
 #include <sys/signal.h>
 #include "md5.h"
@@ -310,6 +310,7 @@ int main(int argc, char* argv[]) {
         }
         resetStringNUM(buf);
         cout << "Bienvenido " << buf << endl;
+        cout << "Algo mas!! " << buf << endl;
     }
     else {
         cout << "Usuario incorrecto." << endl;
@@ -334,10 +335,10 @@ int main(int argc, char* argv[]) {
             cin >> dirIp;
             if (dirIp == "*") {     // broadcasting UDP
 
-                //  socket 
+                //  socket
                 if ((fd5_udp = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) < 0)
                     cout << "\33[46m\33[31m[ERROR]: socket(udp)\33[00m\n";
-            
+
                 //  socket opt broadcast
                 if (setsockopt(fd5_udp, SOL_SOCKET, SO_BROADCAST, &broadcastOn, sizeof(broadcastOn)) < 0)
                     cout << "\33[46m\33[31m[ERROR]: socketopt(udp_rcv)\33[00m\n";
@@ -350,7 +351,7 @@ int main(int argc, char* argv[]) {
                 //send_addr.sin_addr.s_addr = htonl(INADDR_BROADCAST);
                 send_addr.sin_addr.s_addr = inet_addr("192.168.1.255");
                 bzero(&(send_addr.sin_zero), 8);
-                
+
                 sleep(1);
                 string user_mensaje = user + " dice: ";
                 cout << "Ingrese el mensaje que será enviado\n";
@@ -360,7 +361,7 @@ int main(int argc, char* argv[]) {
                 // llamada a sendto
                 if (sendto(fd5_udp, user_mensaje.c_str(), MAX_LARGO_MENSAJE, 0, (struct sockaddr*) & send_addr, sizeof(send_addr)) < 0)
                     cout << "\33[46m\33[31m[ERROR]: send(udp)\33[00m\n";
-                sleep(1);        
+                sleep(1);
                 close(fd5_udp);
             }
             else {      // recibe una ip o localhost
@@ -376,7 +377,7 @@ int main(int argc, char* argv[]) {
                     printf("\33[46m\33[31m[ERROR]: gethostbyname(c)\33[00m\n");
                     exit(-1);
                 }
-                // Para ver que da el gethostbyname() 
+                // Para ver que da el gethostbyname()
                 //printf("Nombre del host: %s\n", he->h_name);
                 //printf("Dirección IP: %s\n", inet_ntoa(*((struct in_addr*)he->h_addr)));
 
@@ -394,44 +395,72 @@ int main(int argc, char* argv[]) {
                 cout << "Ingrese el mensaje que será enviado\n";
                 getline(cin >> ws, mensaje_enviado); // para tomar los espacios del std in
                 user_mensaje = user_mensaje + mensaje_enviado;
-                send(fd3_cliente, user_mensaje.c_str(), MAX_LARGO_MENSAJE, 0);
+                //send(fd3_cliente, user_mensaje.c_str(), MAX_LARGO_MENSAJE, 0);
 
+                string path ("&file"); //inicio str con "&file" solamente para comparar en el if
 
-                /* empieza la parte de archivos
-                char archivo[12];
-                cin >> setw(12) >> archivo;     // como mucho ip tiene 12 digitos, luego del espacio empieza setw() hasta el proximo espacio, para tomar &file
-                //cout << "\n\n\tm_e " << archivo << endl;;
-                if (strcmp(archivo, "&file") == 0) {
-                    getline(cin >> ws, mensaje_enviado); // para tomar los espacios del std in
-                    send(fd3_cliente, mensaje_enviado.c_str(), MAX_LARGO_MENSAJE, 0);
+                if(mensaje_enviado.compare(path) == 0)
+                {
 
-                }
-                else {
-                    getline(cin >> ws, mensaje_enviado); // para tomar los espacios del std in
-                    send(fd3_cliente, mensaje_enviado.c_str(), MAX_LARGO_MENSAJE, 0);
+                    cout<<"CLIENTE - antes de entrar al if de comparte file"<<"\n";
 
-                }*/
-                close(fd3_cliente);
+                    send(fd3_cliente, path.c_str(), MAX_LARGO_MENSAJE, 0);
+
+                    cout << "Ingresar path de la imagen: ";
+                    cin >> path;
+                    FILE *imagen = fopen(path.c_str(),"r");
+
+                    if(imagen==NULL){
+                        cout<<"Error"<<"\n";
+                        break;
+                    }
+
+                    char Buffer[2] = "";
+					
+                    int len;
+                    while ((len = fread(Buffer,sizeof(Buffer),1, imagen)) > 0)
+                    {
+                        send(fd3_cliente,Buffer,sizeof(Buffer),0);
+                    }
+                    send(fd3_cliente,"Hola",sizeof(Buffer),0);
+
+                    cout<<"CLIENTE - despues del while"<<"\n";
+
+                    /*control ACK*/
+                    char Buf[BUFSIZ];
+                    recv(fd3_cliente, Buf, BUFSIZ, 0);
+                    if (strcmp (Buf,"ACK") == 0 )
+                    {
+                    printf("Recive ACK\n");
+                    }
+                    close (fd3_cliente);
+                    fclose(imagen);
+              }
+              else{
+                  send(fd3_cliente, mensaje_enviado.c_str(), MAX_LARGO_MENSAJE, 0);
+                  close(fd3_cliente);
+              }
+
             }
         }
     }
-    if (p == 0) { // proceso hijo "servidor"  
+    if (p == 0) { // proceso hijo "servidor"
 
         // señales hijo
         sigaction(SIGINT, &sb, NULL);
         sigaction(SIGTERM, &sb, NULL);
         sigaction(SIGPIPE, &sb, NULL);
-        sigaction(SIGSEGV, &sb, NULL);        
+        sigaction(SIGSEGV, &sb, NULL);
         signal(SIGCHLD, SIG_IGN); // atrapa señal SIGCHLD y la ignora para no dejar procesos zombies (
 
-            
+
         //  Se cargan los datos del servidor, ip escucha, puerto.
         servidor.sin_family = AF_INET;
         servidor.sin_port = htons(atoi(argv[1]));
         servidor.sin_addr.s_addr = htonl(INADDR_ANY);
         bzero(&(servidor.sin_zero), 8);
 
-        //  socket  tcp      
+        //  socket  tcp
         if ((fd1_servidor = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
             cout << "\33[46m\33[31m[ERROR]: socket(s)\33[00m\n";
             exit(-1);
@@ -461,10 +490,10 @@ int main(int argc, char* argv[]) {
             cout << "\33[46m\33[31m[ERROR]: bind(udp)\33[00m\n";
             exit(-1);
         }
-        
+
         fd_set ds;
         FD_ZERO(&ds);
-        maxfd = max(fd1_servidor, fd6_serverudp) + 1;   
+        maxfd = max(fd1_servidor, fd6_serverudp) + 1;
 
         while (1) {
             FD_SET(fd1_servidor, &ds);
@@ -484,16 +513,65 @@ int main(int argc, char* argv[]) {
                     //printf("conexion recibida desde > %s:%d\n", inet_ntoa(cliente_recibido.sin_addr), ntohs(cliente_recibido.sin_port));
                     sprintf(puerto, "%d", ntohs(cliente_recibido.sin_port));    // para guardar el puerto del cliente
                     strcat(strcat(strcat(strcat(strcat(ipport, "\33[31m[\33[34m"), inet_ntoa(cliente_recibido.sin_addr)), "\33[00m:"), puerto), "\33[31m]\33[00m ");
-                    
+
                     // llamada  a recv
                     if ((numbytes = recv(fd2_accept, mensaje_recibido, MAX_LARGO_MENSAJE, 0)) == -1) {
                         printf("\33[46m\33[31m[ERROR]: recv(s)\33[00m\n");
                         exit(-1);
                     }
-                    alarm(0);
-                    alarm(timeout);
-                    resetStringNUM(mensaje_recibido);
-                    cout << "\33[31m[\33[00m" << getTiempo() << "\33[31m-\33[00m" << ipport << "\33[33m<" << " " << mensaje_recibido << "\33[00m\n";
+
+                    cout<<"SERVER - antes de entrar al if de comparte file"<<"\n";
+					
+					string path ("&file");
+					
+					//if(mensaje_recibido.compare(path.c_str())==0){
+
+					if(strcmp (mensaje_recibido,path.c_str()) == 0){
+                      FILE *fp=fopen("recv.jpeg","w");
+
+                     if(fp==NULL){
+                         cout<<"Error"<<"\n";
+                         break;
+                     }
+
+                     cout<<"SERVIDOR - antes de entrar al WHILE de comparte file"<<"\n";
+
+                     while(1)
+                     {
+                         char Buffer[2] = "";
+						 						
+                         //if (numbytes = recv(fd2_accept, Buffer, sizeof(Buffer), 0))
+						if (recv(fd2_accept, Buffer, sizeof(Buffer), 0))
+						{
+							 
+							 //resetStringNUM(Buffer);
+							 //cout<<Buffer<<endl;
+                             if ( strcmp (Buffer,"Hola") == 0  )
+                             {
+                                 break;
+                             }
+                             else
+							 {
+								 fwrite(Buffer,sizeof(Buffer),1, fp);
+							 }
+						}
+ 
+                     }
+
+                     cout<<"SERVIDOR - antes de entrar al WHILE de comparte file"<<"\n";
+                     fclose(fp);
+					 
+					 send(fd2_accept, "ACK" ,3,0);
+					 printf("ACK Send");
+					 //break;
+					 
+                    }
+                    else {
+                      alarm(0);
+                      alarm(timeout);
+                      resetStringNUM(mensaje_recibido);
+                      cout << "\33[31m[\33[00m" << getTiempo() << "\33[31m-\33[00m" << ipport << "\33[33m<" << " " << mensaje_recibido << "\33[00m\n";
+                    }
                     resetChar(ipport);
                     close(fd2_accept);
                 }
@@ -516,7 +594,7 @@ int main(int argc, char* argv[]) {
                 resetStringNUM(mensaje_broad_recibido);
                 cout << "\33[31m[\33[00m" << getTiempo() << "\33[31m-\33[00m" << ipport << "\33[33m<" << " " << mensaje_broad_recibido << "\33[00m\n";
                 resetChar(ipport);
-             
+
             }
         }
     }
